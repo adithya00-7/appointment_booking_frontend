@@ -245,9 +245,13 @@ class ApiService {
   }
 
   // Delete schedule config
-  async deleteScheduleConfig(scheduleId: string): Promise<void> {
-    return this.request(`/providers/schedule/${scheduleId}`, {
+  async deleteScheduleConfig(providerId: string, configId: string): Promise<void> {
+    return this.request('/providers/schedule', {
       method: 'DELETE',
+      body: JSON.stringify({
+        providerId,
+        configId,
+      }),
     });
   }
 

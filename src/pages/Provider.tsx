@@ -259,7 +259,13 @@ export default function Provider() {
     }
 
     try {
-      await apiService.deleteScheduleConfig(scheduleId);
+      const providerId = user?.providerId || providerProfile?.id;
+      if (!providerId) {
+        toast.error('Provider ID not found');
+        return;
+      }
+      
+      await apiService.deleteScheduleConfig(providerId, scheduleId);
       toast.success('Schedule deleted successfully');
       loadSchedules();
       // Reload appointments
