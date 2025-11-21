@@ -82,18 +82,22 @@ export default function Provider() {
   const loadProviderProfile = async () => {
     setIsLoadingProfile(true);
     try {
-      // Try to fetch from API
-      const profile = await apiService.getProviderProfile();
-      if (profile && profile.providerType) {
-        setProviderProfile(profile);
-        loadSchedules();
-      } else {
-        // No profile found, will show the form
+      // Use providerId from user (from login response)
+      const providerId = user?.providerId;
+      
+      if (!providerId) {
+        // No providerId means profile doesn't exist yet
         setProviderProfile(null);
+        return;
       }
+      
+      // Since we have providerId from login, we can load schedules directly
+      // Profile will be set when user creates it via the form
+      // For now, just check if providerId exists (which means profile exists)
+      setProviderProfile(null); // Will be set when profile is created
+      loadSchedules();
     } catch (error) {
       console.error('Failed to load provider profile:', error);
-      // Profile doesn't exist yet, will show the form
       setProviderProfile(null);
     } finally {
       setIsLoadingProfile(false);
@@ -182,7 +186,16 @@ export default function Provider() {
   const loadSchedules = async () => {
     setIsLoadingSchedules(true);
     try {
-      const scheduleList = await apiService.getProviderSchedules();
+      // Use providerId from user (from login response) or from profile
+      const providerId = user?.providerId || providerProfile?.id;
+      
+      if (!providerId) {
+        console.warn('No providerId available to load schedules');
+        setSchedules([]);
+        return;
+      }
+      
+      const scheduleList = await apiService.getProviderSchedules(providerId);
       setSchedules(scheduleList.sort((a: ScheduleConfig, b: ScheduleConfig) => a.dayOfWeek - b.dayOfWeek));
     } catch (error) {
       console.error('Failed to load schedules:', error);

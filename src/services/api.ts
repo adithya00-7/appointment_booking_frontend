@@ -22,6 +22,7 @@ export interface User {
   lastName: string;
   email?: string;
   userType: 'customer' | 'provider';
+  providerId?: string; // Only present for providers
 }
 
 export interface ProviderProfileRequest {
@@ -211,9 +212,9 @@ class ApiService {
   }
 
   // Get current provider profile
-  async getProviderProfile(): Promise<Provider | null> {
+  async getProviderProfile(providerId: string): Promise<Provider | null> {
     try {
-      return await this.request('/providers/me');
+      return await this.request(`/providers/${providerId}`);
     } catch (error) {
       return null;
     }
@@ -233,8 +234,14 @@ class ApiService {
   }
 
   // Get provider schedules
-  async getProviderSchedules(): Promise<ScheduleConfig[]> {
-    return this.request('/providers/schedule');
+  async getProviderSchedules(providerId: string, activeOnly: boolean = true): Promise<ScheduleConfig[]> {
+    return this.request<ScheduleConfig[]>('/providers/schedule/list', {
+      method: 'POST',
+      body: JSON.stringify({
+        providerId,
+        activeOnly,
+      }),
+    });
   }
 
   // Delete schedule config
