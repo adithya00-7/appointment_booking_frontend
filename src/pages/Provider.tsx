@@ -75,6 +75,7 @@ export default function Provider() {
     }
     if (user) {
       loadProviderProfile();
+      loadAppointments(); // Load appointments regardless of profile status
     }
   }, [user, isAuthLoading, navigate]);
 
@@ -86,7 +87,6 @@ export default function Provider() {
       if (profile && profile.providerType) {
         setProviderProfile(profile);
         loadSchedules();
-        loadAppointments();
       } else {
         // No profile found, will show the form
         setProviderProfile(null);
@@ -104,6 +104,15 @@ export default function Provider() {
     setIsLoadingAppointments(true);
     try {
       const appointmentList = await apiService.getProviderAppointments();
+      console.log('Loaded appointments:', appointmentList);
+      
+      // Ensure we have an array
+      if (!Array.isArray(appointmentList)) {
+        console.error('Appointments response is not an array:', appointmentList);
+        setAppointments([]);
+        return;
+      }
+      
       // Sort by appointment date and time (upcoming first, then by status)
       const sorted = appointmentList.sort((a, b) => {
         const dateA = new Date(a.appointmentDate).getTime();
@@ -130,7 +139,8 @@ export default function Provider() {
       setAppointments(sorted);
     } catch (error) {
       console.error('Failed to load appointments:', error);
-      toast.error('Failed to load appointments');
+      toast.error(error instanceof Error ? error.message : 'Failed to load appointments');
+      setAppointments([]);
     } finally {
       setIsLoadingAppointments(false);
     }
@@ -150,7 +160,6 @@ export default function Provider() {
         providerType: profileForm.providerType,
         specialization: profileForm.specialization || undefined,
         bookingLimitDays: profileForm.bookingLimitDays,
-        businessName: ''
       });
 
       // Ensure profile is set
@@ -174,7 +183,7 @@ export default function Provider() {
     setIsLoadingSchedules(true);
     try {
       const scheduleList = await apiService.getProviderSchedules();
-      setSchedules(scheduleList.sort((a, b) => a.dayOfWeek - b.dayOfWeek));
+      setSchedules(scheduleList.sort((a: ScheduleConfig, b: ScheduleConfig) => a.dayOfWeek - b.dayOfWeek));
     } catch (error) {
       console.error('Failed to load schedules:', error);
       // Don't show error toast for empty schedules

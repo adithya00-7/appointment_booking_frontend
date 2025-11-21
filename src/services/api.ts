@@ -26,11 +26,7 @@ export interface User {
 
 export interface ProviderProfileRequest {
   providerType: string;
-  businessName: string;
   specialization?: string;
-  licenseNumber?: string;
-  bio?: string;
-  slotDurationMinutes?: number;
   bookingLimitDays?: number;
 }
 
@@ -51,10 +47,24 @@ export interface Provider {
 }
 
 export interface ScheduleConfigRequest {
-  providerId: string;
   dayOfWeek: number; // 0=Sunday, 1=Monday, etc.
   startTime: string; // HH:mm format
   endTime: string; // HH:mm format
+  slotMetric: number; // Minutes per slot (if isCount=false) or max bookings (if isCount=true)
+  isCount: boolean; // false=time-divided, true=count-based
+}
+
+export interface ScheduleConfig {
+  id: string;
+  providerId: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  slotMetric: number;
+  isCount: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AvailableDatesRequest {
@@ -200,16 +210,37 @@ class ApiService {
     });
   }
 
+  // Get current provider profile
+  async getProviderProfile(): Promise<Provider | null> {
+    try {
+      return await this.request('/providers/me');
+    } catch (error) {
+      return null;
+    }
+  }
+
   // Get providers by type
   async getProvidersByType(providerType: string): Promise<Provider[]> {
     return this.request(`/providers?type=${providerType}&isActive=true`);
   }
 
   // Schedule configuration
-  async createScheduleConfig(data: ScheduleConfigRequest): Promise<void> {
+  async createScheduleConfig(data: ScheduleConfigRequest): Promise<ScheduleConfig> {
     return this.request('/providers/schedule', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  // Get provider schedules
+  async getProviderSchedules(): Promise<ScheduleConfig[]> {
+    return this.request('/providers/schedule');
+  }
+
+  // Delete schedule config
+  async deleteScheduleConfig(scheduleId: string): Promise<void> {
+    return this.request(`/providers/schedule/${scheduleId}`, {
+      method: 'DELETE',
     });
   }
 
@@ -243,10 +274,24 @@ class ApiService {
 
   // Get provider appointments
   async getProviderAppointments(): Promise<Appointment[]> {
-    return this.request('/appointments/list', {
+    const response = await this.request<Appointment[] | { success: boolean; data: Appointment[] }>('/appointments/list', {
       method: 'POST',
       body: JSON.stringify({}),
     });
+    
+    // Handle both wrapped and unwrapped responses
+    if (Array.isArray(response)) {
+      return response;
+    }
+    
+    // If wrapped in { success, data }
+    if (response && typeof response === 'object' && 'data' in response && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    // Fallback to empty array
+    console.error('Unexpected appointments response format:', response);
+    return [];
   }
 }
 
