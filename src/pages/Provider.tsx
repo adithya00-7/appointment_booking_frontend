@@ -742,14 +742,14 @@ export default function Provider() {
                         </p>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
+                    <button
                       onClick={() => handleDelete(schedule.id)}
-                      className="ml-4"
+                      className="ml-4 p-2 rounded-md bg-white border border-border text-muted-foreground hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 transition-colors focus:outline-none focus:ring-2 focus:ring-destructive/20 shadow-sm"
+                      title="Delete schedule"
+                      type="button"
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                      <Trash2 className="h-5 w-5" strokeWidth={2} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -827,18 +827,18 @@ export default function Provider() {
                               }`}>
                                 {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                               </span>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
+                              <button
                                 onClick={() => toggleAppointmentExpanded(appointment.id)}
+                                className="h-8 w-8 p-1.5 rounded-md bg-white border border-border text-muted-foreground hover:bg-accent hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring shadow-sm"
+                                title={isExpanded ? "Collapse details" : "Expand details"}
+                                type="button"
                               >
                                 {isExpanded ? (
-                                  <ChevronUp className="h-4 w-4" />
+                                  <ChevronUp className="h-5 w-5" strokeWidth={2} />
                                 ) : (
-                                  <ChevronDown className="h-4 w-4" />
+                                  <ChevronDown className="h-5 w-5" strokeWidth={2} />
                                 )}
-                              </Button>
+                              </button>
                             </div>
                           </div>
                           
