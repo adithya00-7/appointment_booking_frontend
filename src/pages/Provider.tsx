@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
 import { toast } from 'sonner';
 import { LogOut, Calendar, Clock, Plus, Trash2, Loader2, Users, Timer, Briefcase, Phone, Mail, UserCircle, AlertCircle, ChevronDown, ChevronUp, FileText, Hash } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { ReminderScheduleManager } from '../components/ReminderScheduleManager';
 
 const DAYS_OF_WEEK = [
   { value: 0, label: 'Sunday' },
@@ -84,13 +85,13 @@ export default function Provider() {
     try {
       // Use providerId from user (from login response)
       const providerId = user?.providerId;
-      
+
       if (!providerId) {
         // No providerId means profile doesn't exist yet
         setProviderProfile(null);
         return;
       }
-      
+
       // Since we have providerId from login, we can load schedules directly
       // Profile will be set when user creates it via the form
       // For now, just check if providerId exists (which means profile exists)
@@ -109,35 +110,35 @@ export default function Provider() {
     try {
       const appointmentList = await apiService.getProviderAppointments();
       console.log('Loaded appointments:', appointmentList);
-      
+
       // Ensure we have an array
       if (!Array.isArray(appointmentList)) {
         console.error('Appointments response is not an array:', appointmentList);
         setAppointments([]);
         return;
       }
-      
+
       // Sort by appointment date and time (upcoming first, then by status)
       const sorted = appointmentList.sort((a, b) => {
         const dateA = new Date(a.appointmentDate).getTime();
         const dateB = new Date(b.appointmentDate).getTime();
-        
+
         // First sort by date (upcoming first)
         if (dateA !== dateB) {
           return dateA - dateB;
         }
-        
+
         // If same date, sort by time
         const timeA = new Date(a.startTime).getTime();
         const timeB = new Date(b.startTime).getTime();
         if (timeA !== timeB) {
           return timeA - timeB;
         }
-        
+
         // If same date and time, prioritize scheduled over cancelled
         if (a.status === 'scheduled' && b.status !== 'scheduled') return -1;
         if (a.status !== 'scheduled' && b.status === 'scheduled') return 1;
-        
+
         return 0;
       });
       setAppointments(sorted);
@@ -188,13 +189,13 @@ export default function Provider() {
     try {
       // Use providerId from user (from login response) or from profile
       const providerId = user?.providerId || providerProfile?.id;
-      
+
       if (!providerId) {
         console.warn('No providerId available to load schedules');
         setSchedules([]);
         return;
       }
-      
+
       const scheduleList = await apiService.getProviderSchedules(providerId);
       setSchedules(scheduleList.sort((a: ScheduleConfig, b: ScheduleConfig) => a.dayOfWeek - b.dayOfWeek));
     } catch (error) {
@@ -229,7 +230,7 @@ export default function Provider() {
       });
 
       toast.success('Schedule configuration added successfully!');
-      
+
       // Reset form
       setFormData({
         dayOfWeek: '',
@@ -239,13 +240,13 @@ export default function Provider() {
         isCount: false,
       });
       setShowAddForm(false);
-      
-        // Reload schedules
-        loadSchedules();
-        // Reload appointments in case new slots are available
-        if (providerProfile) {
-          loadAppointments();
-        }
+
+      // Reload schedules
+      loadSchedules();
+      // Reload appointments in case new slots are available
+      if (providerProfile) {
+        loadAppointments();
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to add schedule');
     } finally {
@@ -264,7 +265,7 @@ export default function Provider() {
         toast.error('Provider ID not found');
         return;
       }
-      
+
       await apiService.deleteScheduleConfig(providerId, scheduleId);
       toast.success('Schedule deleted successfully');
       loadSchedules();
@@ -288,28 +289,28 @@ export default function Provider() {
 
   const formatTime = (timeString: string) => {
     const date = new Date(timeString);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -373,7 +374,7 @@ export default function Provider() {
                     {providerProfile ? 'Update Provider Profile' : 'Complete Your Provider Profile'}
                   </DialogTitle>
                   <DialogDescription>
-                    {providerProfile 
+                    {providerProfile
                       ? 'Update your provider information'
                       : 'Fill in your details to start accepting appointments'}
                   </DialogDescription>
@@ -426,9 +427,9 @@ export default function Provider() {
                     </div>
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => setShowProfileDialog(false)}
                       disabled={isCreatingProfile}
                     >
@@ -468,8 +469,8 @@ export default function Provider() {
                   <p className="text-sm text-orange-800 dark:text-orange-200 mb-3">
                     Complete your provider profile to start accepting appointments and configure your schedule.
                   </p>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     onClick={() => setShowProfileDialog(true)}
                     className="bg-orange-600 hover:bg-orange-700"
                   >
@@ -604,8 +605,8 @@ export default function Provider() {
                     <Label>Slot Type *</Label>
                     <RadioGroup
                       value={formData.isCount ? 'count' : 'time'}
-                      onValueChange={(value) => setFormData(prev => ({ 
-                        ...prev, 
+                      onValueChange={(value) => setFormData(prev => ({
+                        ...prev,
                         isCount: value === 'count',
                         slotMetric: value === 'count' ? 50 : 30
                       }))}
@@ -656,9 +657,9 @@ export default function Provider() {
                       type="number"
                       min="1"
                       value={formData.slotMetric}
-                      onChange={(e) => setFormData(prev => ({ 
-                        ...prev, 
-                        slotMetric: parseInt(e.target.value) 
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        slotMetric: parseInt(e.target.value)
                       }))}
                     />
                   </div>
@@ -678,9 +679,9 @@ export default function Provider() {
                       </>
                     )}
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={() => setShowAddForm(false)}
                     disabled={isSaving}
                   >
@@ -757,6 +758,11 @@ export default function Provider() {
           </CardContent>
         </Card>
 
+        {/* Reminder Schedules */}
+        <div className="mb-6">
+          <ReminderScheduleManager />
+        </div>
+
         {/* Appointments */}
         <Card className="mb-6">
           <CardHeader>
@@ -767,8 +773,8 @@ export default function Provider() {
                   View all your scheduled appointments
                 </CardDescription>
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={loadAppointments}
                 disabled={isLoadingAppointments}
@@ -818,13 +824,12 @@ export default function Provider() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${
-                                appointment.status === 'scheduled' 
-                                  ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
-                                  : appointment.status === 'cancelled'
+                              <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${appointment.status === 'scheduled'
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                                : appointment.status === 'cancelled'
                                   ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'
                                   : 'bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400'
-                              }`}>
+                                }`}>
                                 {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                               </span>
                               <button
@@ -841,7 +846,7 @@ export default function Provider() {
                               </button>
                             </div>
                           </div>
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                             <div className="space-y-2">
                               <div className="flex items-center gap-2 text-muted-foreground">
@@ -968,7 +973,7 @@ export default function Provider() {
                   Time-Divided Slots (Traditional)
                 </h4>
                 <p className="text-muted-foreground">
-                  Perfect for appointments with fixed duration. For example, set Monday 9:00-17:00 with 30-minute slots. 
+                  Perfect for appointments with fixed duration. For example, set Monday 9:00-17:00 with 30-minute slots.
                   This creates slots: 9:00-9:30, 9:30-10:00, etc. Each slot can be booked by one customer.
                 </p>
               </div>
@@ -978,7 +983,7 @@ export default function Provider() {
                   Count-Based Slots (Walk-in Style)
                 </h4>
                 <p className="text-muted-foreground">
-                  Ideal for walk-in clinics or group sessions. For example, set Tuesday 9:00-17:00 with 50 max customers. 
+                  Ideal for walk-in clinics or group sessions. For example, set Tuesday 9:00-17:00 with 50 max customers.
                   This creates ONE large slot where up to 50 people can book for the same time period.
                 </p>
               </div>

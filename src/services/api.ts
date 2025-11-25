@@ -1,5 +1,6 @@
 // API service for backend communication
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const REMINDER_SERVICE_BASE_URL = import.meta.env.VITE_REMINDER_SERVICE_BASE_URL || 'http://localhost:3000';
 
 export interface LoginRequest {
   phone: string;
@@ -144,6 +145,20 @@ export interface Appointment {
   };
 }
 
+export interface ReminderScheduleRequest {
+  type: 'days_before' | 'percentage';
+  value: number; // 1-365 for days_before, 1-100 for percentage
+}
+
+export interface ReminderSchedule {
+  id: string;
+  providerId: string;
+  type: 'days_before' | 'percentage';
+  value: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 class ApiService {
   private getToken(): string | null {
     return localStorage.getItem('accessToken');
@@ -179,12 +194,12 @@ class ApiService {
     }
 
     const json = await response.json();
-    
+
     // Handle wrapped response format: { success, data, message }
     if (json.success !== undefined && json.data !== undefined) {
       return json.data as T;
     }
-    
+
     return json as T;
   }
 
@@ -289,20 +304,73 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({}),
     });
-    
+
     // Handle both wrapped and unwrapped responses
     if (Array.isArray(response)) {
       return response;
     }
-    
+
     // If wrapped in { success, data }
     if (response && typeof response === 'object' && 'data' in response && Array.isArray(response.data)) {
       return response.data;
     }
-    
+
     // Fallback to empty array
     console.error('Unexpected appointments response format:', response);
     return [];
+  }
+
+  // Reminder schedule management
+  async createReminderSchedule(data: ReminderScheduleRequest): Promise<ReminderSchedule> {
+    const token = this.getToken();
+    const response = await fetch(`${REMINDER_SERVICE_BASE_URL}/api/providers/reminders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to create reminder schedule' }));
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const json = await response.json();
+    // Handle wrapped response format
+    if (json.success !== undefined && json.data !== undefined) {
+      return json.data as ReminderSchedule;
+    }
+    return json as ReminderSchedule;
+  }
+
+  async listReminderSchedules(providerId: string, activeOnly: boolean = true): Promise<ReminderSchedule[]> {
+    const token = this.getToken();
+    const response = await fetch(`${REMINDER_SERVICE_BASE_URL}/api/providers/reminders/list`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        providerId,
+        activeOnly,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to fetch reminder schedules' }));
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const json = await response.json();
+    // Handle wrapped response format
+    if (json.success !== undefined && json.data !== undefined) {
+      return json.data as ReminderSchedule[];
+    }
+    // Fallback for unwrapped array response
+    return (Array.isArray(json) ? json : []) as ReminderSchedule[];
   }
 }
 
